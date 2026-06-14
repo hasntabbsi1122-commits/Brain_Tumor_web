@@ -1,0 +1,20 @@
+# Model files — too large for GitHub, stored on Hugging Face Hub
+models/
+*.pth
+*.pt
+*.h5
+
+# Python automatically creates these — not needed on GitHub
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment and secret files — never upload these
+.env
+venv/
+env/
+.venv/
+
+# Your laptop's personal folder settings
+.DS_Store
+Thumbs.db
