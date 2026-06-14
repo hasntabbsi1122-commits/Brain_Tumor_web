@@ -18,7 +18,6 @@ app = Flask(__name__, static_folder='static')
 CORS(app)
 
 
-# ── Your exact same model architecture (nothing changed here) ─────────────────
 
 class HybridEncoder(nn.Module):
     def __init__(self):
@@ -109,13 +108,8 @@ class MultiTaskHybridUNetPP(nn.Module):
         return self.final_conv(d5), logits
 
 
-# ── Model download and loading ────────────────────────────────────────────────
-#
-#  !! IMPORTANT: Replace the value below with YOUR Hugging Face details !!
-#  Format is:  "your-hf-username/your-model-repo-name"
-#  Example:    "Hasnat472/brain-tumor-models"
-#
-HF_REPO_ID      = "Hasnat472/brain-tumor-models"   # <-- CHANGE THIS
+
+HF_REPO_ID      = "Hasnat472/brain-tumor-models"   
 MODEL_FILENAME  = "final_best_hybrid_unetpp_model.pth"
 LOCAL_MODEL_DIR = "models"
 LOCAL_MODEL_PATH = os.path.join(LOCAL_MODEL_DIR, MODEL_FILENAME)
@@ -145,7 +139,7 @@ print("\n" + "="*50)
 print("  Brain Tumor Detection — Starting Up")
 print("="*50)
 
-device = torch.device("cpu")   # Hugging Face free tier is CPU only
+device = torch.device("cpu")  
 print(f"[INFO] Device: {device}")
 
 model_path = download_model_if_needed()
@@ -161,7 +155,7 @@ print("="*50 + "\n")
 CLASS_NAMES = ['Glioma', 'Meningioma', 'Pituitary', 'No Tumor']
 
 
-# ── Image processing (unchanged from your original) ───────────────────────────
+
 
 def preprocess_image(image_input):
     if isinstance(image_input, bytes):
@@ -193,7 +187,6 @@ def create_overlay(image_bytes, binary_mask):
     return base64.b64encode(buffered.getvalue()).decode()
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route('/')
 def home():        return send_from_directory('static', 'index.html')
@@ -253,6 +246,6 @@ def predict():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-# ── Port 7860 is required by Hugging Face Spaces ──────────────────────────────
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=7860, debug=False)
