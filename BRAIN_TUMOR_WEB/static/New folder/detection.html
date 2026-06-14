@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Detection — Brain Tumor Detection</title>
+  <link rel="stylesheet" href="atyle1.css">
+</head>
+<body>
+ 
+<!-- Navigation -->
+<nav>
+  <h1>Brain Tumor Detection</h1>
+  <ul>
+    <li><a href="static\index.html">Home</a></li>
+    <li><a href="detection.html" class="active">Detection</a></li>
+    <li><a href="consult.html">Consult a Doctor</a></li>
+    <li><a href="about.html">About Us</a></li>
+  </ul>
+</nav>
+ 
+<!-- Page Header -->
+<div class="page-hero">
+  <h2>AI MRI Analysis</h2>
+  <p>Upload an MRI scan for instant AI-powered tumor detection and segmentation overlay.</p>
+</div>
+ 
+<!-- Detection Interface -->
+<div class="detection-wrapper">
+  <div class="card">
+ 
+    <h3 style="margin-bottom: 0.4rem;">Upload MRI Image</h3>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+      Supported formats: JPG, PNG, WEBP. Clear MRI scans yield best results.
+    </p>
+ 
+    <!-- File Upload Area -->
+    <div class="upload-area" id="uploadArea">
+      <input type="file" id="mriInput" accept="image/*" onchange="handleFileSelect(event)">
+      <span class="upload-icon"></span>
+      <p><strong>Click to upload</strong> or drag &amp; drop your MRI image here</p>
+      <div class="file-name" id="fileName">No file selected</div>
+    </div>
+ 
+    <!-- Image Preview -->
+     <div id="previewSection">
+      <h4>Selected Image Preview</h4>
+      <img id="previewImg" src="" alt="MRI Preview">
+    </div>
+ 
+    <!-- Analyze Button -->
+    <button class="btn-analyze" id="analyzeBtn" onclick="analyzeImage()" disabled>
+      Run AI Diagnosis
+    </button>
+ 
+    <!-- Loading Indicator -->
+    <div id="loader" class="loading">
+      <div class="spinner"></div>
+      <p>Analyzing MRI Scan... Please wait...</p>
+    </div>
+ 
+    <!-- Results Area -->
+    <div id="resultArea" class="result-container">
+ 
+      <h3 id="predictionText"></h3>
+      <span id="resultBadge" class="result-badge"></span>
+ 
+      <div class="result-stats">
+        <div class="stat-box">
+          <span class="label">Tumor Type</span>
+          <span class="value" id="tumorType" style="font-size: 1rem;">—</span>
+        </div>
+        <div class="stat-box">
+          <span class="label">Confidence</span>
+          <span class="value" id="confidenceText">—</span>
+        </div>
+      </div>
+ 
+      <div class="confidence-bar-wrap">
+        <span class="label">Model Confidence</span>
+        <div class="bar-bg">
+          <div class="bar-fill" id="confidenceBar"></div>
+        </div>
+        <div class="bar-pct" id="barPct"></div>
+      </div>
+ 
+      <div>
+        <h4>Tumor Segmentation Overlay</h4>
+        <img id="mask-output" src="" alt="Tumor Overlay on MRI">
+      </div>
+ 
+    </div>
+  </div>
+</div>
+ 
+<!-- Footer -->
+<footer>
+  <p>&copy; 2025 <strong>Brain Tumor Detection Project</strong> | Designed by HHI</p>
+</footer>
+ 
+<!-- JavaScript -->
+<script>
+  // Called when user selects a file
+  function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+ 
+    document.getElementById('fileName').innerText = file.name;
+    document.getElementById('analyzeBtn').disabled = false;
+ 
+    // Show image preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('previewSection').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+ 
+  // Called when Analyze button is clicked
+  async function analyzeImage() {
+    const fileInput  = document.getElementById('mriInput');
+    const resultArea = document.getElementById('resultArea');
+    const loader     = document.getElementById('loader');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+ 
+    if (fileInput.files.length === 0) {
+      alert("Please select an image first!");
+      return;
+    }
+ 
+    // Show loader, hide previous results
+    loader.style.display    = "block";
+    resultArea.style.display = "none";
+    analyzeBtn.disabled      = true;
+ 
+    // Send image to backend
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+ 
+    try {
+      const response = await fetch('/predict', { method: 'POST', body: formData });
+      const data = await response.json();
+ 
+      if (data.success) {
+        loader.style.display     = "none";
+        resultArea.style.display = "block";
+        analyzeBtn.disabled      = false;
+ 
+        const cls     = data.prediction.class;
+        const conf    = data.prediction.confidence;
+        const isTumor = cls !== 'No Tumor';
+ 
+        // Display prediction
+        document.getElementById('predictionText').innerText = "Diagnosis: " + cls;
+ 
+        // Badge
+        const badge = document.getElementById('resultBadge');
+        badge.innerText  = isTumor ? "⚠ Tumor Detected" : "✅ No Tumor Found";
+        badge.className  = "result-badge " + (isTumor ? "badge-tumor" : "badge-no-tumor");
+ 
+        // Stats
+        document.getElementById('tumorType').innerText     = cls;
+        document.getElementById('confidenceText').innerText = conf + "%";
+ 
+        // Animate confidence bar
+        setTimeout(() => {
+          document.getElementById('confidenceBar').style.width = conf + "%";
+        }, 100);
+        document.getElementById('barPct').innerText = conf + "% confidence";
+ 
+        // Segmentation overlay image
+        document.getElementById('mask-output').src = "data:image/png;base64," + data.overlay_image;
+ 
+      } else {
+        alert("AI Error: " + data.error);
+        loader.style.display = "none";
+        analyzeBtn.disabled  = false;
+      }
+ 
+    } catch (error) {
+      console.error(error);
+      alert("Connection Error: Make sure your Python app.py is running!");
+      loader.style.display = "none";
+      analyzeBtn.disabled  = false;
+    }
+  }
+</script>
+ 
+</body>
+</html>
